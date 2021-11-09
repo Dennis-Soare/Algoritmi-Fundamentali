@@ -3,6 +3,7 @@
 #include <vector>
 #include <queue>
 #include <stack>
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -32,7 +33,46 @@ public:
     void Sortare_topologica();
     void afisare_vecini();
     void citire_graf();
+    bool Havel_Hakimi();
 };
+
+bool Graf::Havel_Hakimi()
+{
+    in>>nrNoduri;
+    int grad[nrNoduri+1], suma=0;
+    for(int i=0; i<nrNoduri; i++)
+    {
+        in >> grad[i];
+        suma += grad[i];
+        if(grad[i] > (nrNoduri - 1))
+        {
+            out<<"NU";
+            return false;
+        }
+    }
+    if(suma % 2 == 1)
+    {
+        out <<"NU";
+        return false;
+    }
+    sort(grad, grad+nrNoduri);
+    while(grad[0] != 0)
+    {
+        for(int i=1; i<=grad[0]; i++)
+        {
+            grad[i]--;
+            if(grad[i] < 0)
+            {
+                out<<"NU";
+                return false;
+            }
+        }
+        grad[0] = 0;
+        sort(grad, grad+nrNoduri);
+    }
+    out<<"DA";
+    return true;
+}
 
 void Graf::citire_graf()
 {
