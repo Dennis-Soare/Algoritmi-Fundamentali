@@ -55,9 +55,14 @@ bool Graf::Havel_Hakimi()
         out <<"NU";
         return false;
     }
-    sort(grad, grad+nrNoduri);
+    sort(grad, grad+nrNoduri, greater<int>());
     while(grad[0] != 0)
     {
+        for(int i=0; i<nrNoduri; i++)
+        {
+            out<<grad[i]<<' ' ;
+        }
+        out<<"\n";
         for(int i=1; i<=grad[0]; i++)
         {
             grad[i]--;
@@ -68,7 +73,7 @@ bool Graf::Havel_Hakimi()
             }
         }
         grad[0] = 0;
-        sort(grad, grad+nrNoduri);
+        sort(grad, grad+nrNoduri, greater<int>());
     }
     out<<"DA";
     return true;
@@ -283,6 +288,7 @@ void Graf::problema_BFS()
 int main()
 {
     Graf G;
+    G.Havel_Hakimi();
     in.close();
     out.close();
     return 0;
