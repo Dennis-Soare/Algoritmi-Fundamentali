@@ -21,6 +21,9 @@ class Graf {
     vector<int> sortare_topologica(vector<int> grad_intern);
     void reuneste(int x, int y, vector<int>& tata, vector<int>& inaltime);
     int reprez(int x, vector<int>& tata);
+    void Initializare(int u,vector<int>& r);
+    int Reprez_Kruskal(int u, vector<int>& r);
+    void Reuneste_Kruskal(int u, int v, vector<int>&r);
 
 public:
     void problema_BFS();
@@ -30,6 +33,7 @@ public:
     void problema_APM();
     void Paduri_de_multimi_disjuncte();
     void problema_Dijkstra();
+    void problema_Bellman_Ford();
 };
 
 void Graf::afis_lista_ad()
@@ -324,27 +328,51 @@ void Graf::Paduri_de_multimi_disjuncte()
     out.close();
 }
 
+void Graf::Initializare(int u, vector<int>& r) {
+    r[u] = u;
+}
+
+int Graf::Reprez_Kruskal(int u, vector<int>&r) {
+    return r[u];
+}
+
+void Graf::Reuneste_Kruskal(int u, int v, vector<int>&r) {
+    int r1 = Reprez_Kruskal(u, r);
+    int r2 = Reprez_Kruskal(v, r);
+    for(int k=1; k<=nrNoduri; k++) {
+        if(r[k] == r2)
+            r[k] = r1;
+    }
+}
+
 void Graf::problema_APM()
 {
     ifstream in("apm.in");
     ofstream out("apm.out");
 
-    vector<tuple<int, int, int>> muchii;
 
     in>>nrNoduri>>nrMuchii;
     vecini.resize(nrNoduri+1);
+    vector<int> r;
+    r.resize(nrNoduri);
+    vector<vector<pair<int, int>>>drumuri;
+    drumuri.resize(nrNoduri+1);
 
     for(int i=0; i<nrMuchii; i++){
-        int x,y,c;
-        in>>x>>y>>c;
-        vecini[x].push_back(y);
-        vecini[y].push_back(x);
-        tuple<int,int,int> m;
-        m = make_tuple(x,y,c);
-        muchii.push_back(m);
+        int a,b,c;
+        in>>a>>b>>c;
+        drumuri[a].push_back(make_pair(b,c));
     }
-    afis_lista_ad();
-    for(int i=0; i<int(muchii.size());i++){
+    for(int i=1;i<=nrNoduri;i++){
+        cout<<i<<": ";
+        for(int j=0; j<int(drumuri[i].size());j++){
+            cout<<drumuri[i][j].first<<' '<<drumuri[i][j].second<<"; ";
+        }
+        cout<<endl;
+    }
+    //sorteaza muchiile
+    for(int i=1; i<=nrNoduri; i++){
+        Initializare(i, r);
     }
 
     in.close();
@@ -363,6 +391,7 @@ void Graf::problema_Dijkstra()
     drumuri.resize(nrNoduri+1);
     dist.resize(nrNoduri+1);
     tata.resize(nrNoduri+1);
+    vizitat.resize(nrNoduri+1);
     for(int i=0; i<=nrNoduri;i++) {
         tata[i] = 0;
         dist[i] = NMAX;
@@ -385,7 +414,7 @@ void Graf::problema_Dijkstra()
     bool ok = false;
     int nod_curent = 1;
     dist[1] = 0;
-    /*while(!ok) {
+    while(!ok) {
         ok = true;
         vizitat[nod_curent] = true;
         for(int i=0; i<int(drumuri[nod_curent].size());i++){
@@ -403,13 +432,63 @@ void Graf::problema_Dijkstra()
                 ok = false;
             }
         }
-    }*/
-    for(int i=1; i<=nrNoduri; i++) {
-        cout<<dist[i]<<' ';
+    }
+    for(int i=2; i<=nrNoduri; i++) {
+        out<<dist[i]<<' ';
     }
 
+    in.close();
+    out.close();
+}
 
+void Graf::problema_Bellman_Ford()
+{
+    ifstream in("bellmanford.in");
+    ofstream out("bellmanford.out");
 
+    in>>nrNoduri>>nrMuchii;
+    vector<vector<pair<int, int>>>drumuri;
+    vector<int> dist, tata;
+    drumuri.resize(nrNoduri+1);
+    dist.resize(nrNoduri+1);
+    tata.resize(nrNoduri+1);
+    for(int i=0; i<=nrNoduri;i++) {
+        tata[i] = 0;
+        dist[i] = NMAX;
+    }
+
+    for(int i=0; i<nrMuchii; i++) {
+        int a,b,c;
+        in>>a>>b>>c;
+        drumuri[a].push_back(make_pair(b,c));
+    }
+    /*for(int i=1;i<=nrNoduri;i++){
+        cout<<i<<": ";
+        for(int j=0; j<int(drumuri[i].size());j++){
+            cout<<drumuri[i][j].first<<' '<<drumuri[i][j].second<<"; ";
+        }
+        cout<<endl;
+    }*/
+
+    queue<int> coada;
+    dist[1] = 0;
+    coada.push(1);
+    while(!coada.empty()) {
+        int nod_curent = coada.front();
+        coada.pop();
+        for(int i=0; i<int(drumuri[nod_curent].size());i++) {
+            int vecin = drumuri[nod_curent][i].first;
+            int cost = drumuri[nod_curent][i].second;
+            if(dist[nod_curent] + cost < dist[vecin]){
+                dist[vecin] = dist[nod_curent] + cost;
+                tata[vecin] = nod_curent;
+                coada.push(vecin);
+            }
+        }
+    }
+    for(int i=2; i<=nrNoduri; i++) {
+        out<<dist[i]<<' ';
+    }
     in.close();
     out.close();
 }
@@ -485,6 +564,7 @@ int main()
     //G.Havel_Hakimi();
     //G.problema_APM();
     //G.Paduri_de_multimi_disjuncte();
-    G.problema_Dijkstra();
+    //G.problema_Dijkstra();
+    //G.problema_Bellman_Ford();
     return 0;
 }
