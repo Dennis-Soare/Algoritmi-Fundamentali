@@ -8,6 +8,8 @@ class Graf {
     int nrNoduri, nrMuchii;
     vector<vector<int>> vecini;
 
+    int Flux_maxim(const vector<vector<int>>& cap, const int sursa, const int dest);
+    bool construieste_lant_nesat_BF(const int sursa, const int dest, vector<int>& tata,const vector<vector<int>>& cap, vector<vector<int>>& flux);
     int diametru_arbore();
     vector<vector<int>> Roy_Floyd(vector<vector<int>> matrice);
     vector<int> BFS(const int Start);
@@ -22,13 +24,14 @@ class Graf {
     vector<int> Bellman_Ford(const vector<vector<pair<int, int>>>&, const int sursa, bool& ciclu_negativ);
     void reuneste(int x, int y, vector<int>& tata, vector<int>& inaltime);  // pentru Paduri_de_multimi_disjuncte
     int reprez(int x, vector<int>& tata);                                   // pentru Paduri_de_multimi_disjuncte
+    bool Havel_Hakimi(int grad[]);
     void afis_lista_ad();
 
 public:
     void problema_BFS();
     void problema_DFS();
     void problema_sortaret();
-    void Havel_Hakimi();
+    void problema_Havel_Hakimi();
     void problema_APM();
     void Paduri_de_multimi_disjuncte();
     void problema_Dijkstra();
@@ -36,8 +39,117 @@ public:
     void problema_Roy_Floyd();
     void problema_darb();
     void problema_ctc();
+    void problema_Flux_Maxim();
 };
 
+bool Graf::construieste_lant_nesat_BF(const int sursa, const int dest, vector<int>& tata,const vector<vector<int>>& cap, vector<vector<int>>& flux)
+{
+    queue<int> coada;           // pentru BFS
+    bool am_ajuns = false;      // bool care verifica daca BFS a ajuns la nodul destinatie
+
+    for(int i=1; i<=nrNoduri; i++){
+        tata[i] = 0;
+    }
+
+    tata[sursa] = -1;           // pentru a marca nodul sursa vizitat
+    coada.push(sursa);
+
+    while(!coada.empty()){
+        int i = coada.front();
+        coada.pop();
+
+        if(i == dest){
+            am_ajuns = true;
+            continue;
+        }
+
+        for(int &j: vecini[i]){
+            if((cap[i][j] - flux[i][j] > 0) && tata[j] == 0){
+                coada.push(j);
+                tata[j] = i;
+            }
+        }
+    }
+
+    return am_ajuns;
+}
+
+int Graf::Flux_maxim(const vector<vector<int>>& cap, const int sursa, const int dest)
+{
+    vector<int> tata(nrNoduri+1, 0);
+    vector<vector<int>> flux(nrNoduri+1, vector<int>(nrNoduri+1, 0));
+    int flux_max = 0;
+
+    /*for(int i=1; i<=nrNoduri; i++){
+        for(int j=1; j<= nrNoduri; j++){
+            cout<<cap[i][j]<<' ';
+        }
+        cout<<'\n';
+    }*/
+
+    // Algoritm Edmonds-Karp
+    // O(n * m^2)
+
+   while(construieste_lant_nesat_BF(sursa, dest, tata, cap, flux)){
+        for(auto &nod: vecini[dest]){           // Revizuim toate drumurile gasite de la sursa la destinatie dupa o parcurgere BF
+            int u = dest;
+            int update_flux = NMAX;
+
+            if(tata[nod] == 0){
+                continue;
+            }
+
+            tata[dest] = nod;
+            while(u != sursa){
+                update_flux = min(update_flux, cap[tata[u]][u] - flux[tata[u]][u]);
+                u = tata[u];
+            }
+
+            u = dest;
+            while(u != sursa){              // Revizuieste flux lant
+                flux[tata[u]][u] += update_flux;
+                flux[u][tata[u]] -= update_flux;
+                u = tata[u];
+            }
+
+            flux_max += update_flux;
+
+            /*cout<<'\n';
+            for(int i=1; i<=nrNoduri; i++){
+                for(int j=1; j<= nrNoduri; j++)
+                    cout<<flux[i][j]<<' ';
+                cout<<'\n';
+            }*/
+        }
+
+    }
+
+    return flux_max;
+}
+
+void Graf::problema_Flux_Maxim()
+{
+    ifstream in("maxflow.in");
+    ofstream out("maxflow.out");
+
+    in>>nrNoduri>>nrMuchii;
+    vector<vector<int>> cap(nrNoduri+1, vector<int>(nrNoduri+1, 0));
+
+    vecini.resize(nrNoduri+1);
+    for(int i=1; i<=nrMuchii; i++){
+            int x,y,z;
+            in>>x>>y>>z;
+            vecini[x].push_back(y);
+            vecini[y].push_back(x);
+            cap[x][y] = z;
+    }
+
+    int maxflow = Flux_maxim(cap, 1, nrNoduri);
+    out<<maxflow;
+
+    in.close();
+    out.close();
+}
 
 int Graf::diametru_arbore()
 {
@@ -103,7 +215,7 @@ void Graf::problema_Roy_Floyd()
     out.close();
 }
 
-vector<vector<int>> Graf::Roy_Floyd(vector<vector<int>> matrice)
+vector<vector<int>> Graf::Roy_Floyd(vector<vector<int>> matrice)        //O(n^3)
 {
     for(int i=0; i<nrNoduri; i++){
         for(int j=0; j<nrNoduri; j++){
@@ -144,7 +256,7 @@ void Graf::afis_lista_ad()
     }
 }
 
-vector<int> Graf::distante_BFS(const int Start)
+vector<int> Graf::distante_BFS(const int Start)         // O(n+m)
 {
     queue<int> coada;
     vector<int> dist(nrNoduri+1, 0);
@@ -172,7 +284,7 @@ vector<int> Graf::distante_BFS(const int Start)
     return dist;
 }
 
-vector<int> Graf::BFS(const int Start)
+vector<int> Graf::BFS(const int Start)                  // O(n+m)
 {
     vector<int>sol;
     queue<int> coada;
@@ -232,7 +344,7 @@ void Graf::parcurgere_DFS(const int nod_curent, vector<int>& sol, vector<bool>& 
     }
 }
 
-vector<int> Graf::DFS(const int Start)
+vector<int> Graf::DFS(const int Start)                  // O(n+m)
 {
     vector<int> sol;
     vector<bool> viz(nrNoduri+1, false);
@@ -280,10 +392,10 @@ vector<int> Graf::sortare_topologica(vector<int> grad_intern)
     int contor = 0;
     while(contor < nrNoduri) {
         for(int nod = 1; nod <= nrNoduri; nod++) {
-            if(grad_intern[nod] == 0) {
+            if(grad_intern[nod] == 0) {         //selectam nodurile cu gradul intern 0
                 contor++;
                 sol.push_back(nod);
-                for(int i=0; i<int(vecini[nod].size()); i++){
+                for(int i=0; i<int(vecini[nod].size()); i++){       //updatam gradul intern al vecinilor dupa ce am scos nodul selectat
                     grad_intern[vecini[nod][i]]--;
                 }
                 grad_intern[nod]--;
@@ -299,12 +411,10 @@ void Graf::problema_sortaret()
     ofstream out("sortaret.out");
 
     in>>nrNoduri>>nrMuchii;
+
     vecini.resize(nrNoduri+1);
-    vector<int> grad_intern;
-    grad_intern.resize(nrNoduri+1);
-    for(int i=0; i<nrNoduri; i++){
-        grad_intern[i]=0;
-    }
+    vector<int> grad_intern(nrNoduri+1, 0);
+
     for(int i=0; i<nrMuchii; i++){
         int x,y;
         in>>x>>y;
@@ -320,37 +430,52 @@ void Graf::problema_sortaret()
     out.close();
 }
 
-void Graf::Havel_Hakimi()
+bool Graf::Havel_Hakimi(int grad[])
 {
-    cout<<"Introduceti numarul de noduri: ";
-    cin>>nrNoduri;
-    int grad[nrNoduri+1], suma=0;
-    cout<<"Introduceti " << nrNoduri <<" numere: ";
+    int suma=0;
     for(int i=0; i<nrNoduri; i++) {
-        cin >> grad[i];
         suma += grad[i];
         if(grad[i] > (nrNoduri - 1)) {
-            cout<<"NU";
-            return;
+            return false;
         }
     }
+
     if(suma % 2 == 1){
-        cout <<"NU";
-        return;
+        return false;
     }
+
     sort(grad, grad+nrNoduri, greater<int>());
+
     while(grad[0] != 0){
         for(int i=1; i<=grad[0]; i++){
             grad[i]--;
             if(grad[i] < 0){
-                cout<<"NU";
-                return;
+                return false;
             }
         }
         grad[0] = 0;
         sort(grad, grad+nrNoduri, greater<int>());
     }
-    cout<<"DA";
+    return true;
+}
+
+void Graf::problema_Havel_Hakimi()
+{
+    cout<<"Introduceti numarul de noduri: ";
+    cin>>nrNoduri;
+
+    int grad[nrNoduri+1];
+    cout<<"Introduceti " << nrNoduri <<" numere: ";
+
+    for(int i=0; i<nrNoduri; i++) {
+        cin >> grad[i];
+    }
+
+    bool HH = Havel_Hakimi(grad);
+
+    if(HH)
+        cout<<"DA";
+    else cout<<"NU";
 }
 
 void Graf::reuneste(int x, int y, vector<int>& tata, vector<int>& inaltime)
@@ -380,13 +505,11 @@ void Graf::Paduri_de_multimi_disjuncte()
     ofstream out("disjoint.out");
 
     int nrOperatii;
-    vector<int> tata, inaltime;
     in>>nrNoduri>>nrOperatii;
-    tata.resize(nrNoduri+1);
-    inaltime.resize(nrNoduri+1);
-    for(int i=0; i<=nrNoduri;i++){
-        tata[i] = inaltime[i] = 0;
-    }
+
+    vector<int> tata(nrNoduri+1, 0), inaltime(nrNoduri+1, 0);
+
+    // fiecare multime este memorata sub forma unui arbore, avand ca reprezentant radacina
 
     for(int i=0;i<nrOperatii;i++) {
         int operatie,x,y;
@@ -405,7 +528,7 @@ void Graf::Paduri_de_multimi_disjuncte()
     out.close();
 }
 
-vector<pair<int,int>> Graf::Prim(const vector<vector<pair<int, int>>> &lista_ad, int& cost_arbore, const int sursa)
+vector<pair<int,int>> Graf::Prim(const vector<vector<pair<int, int>>> &lista_ad, int& cost_arbore, const int sursa)     //O(m * log(n))
 {
     vector<bool> viz(nrNoduri+1, false);
     vector<int> tata(nrNoduri+1, -1), cost_min(nrNoduri+1, NMAX);
@@ -419,24 +542,24 @@ vector<pair<int,int>> Graf::Prim(const vector<vector<pair<int, int>>> &lista_ad,
         int cost_muchie = q.top().first;
         q.pop();
 
-        if(!viz[nod]){
-
+        if(!viz[nod]){              // alegem muchia cea mai mica care pleaca din componenta conexa si se termina in afara ei
+                                    // nodul proaspat unit devine parte din componenta conexa
             viz[nod] = true;
             cost_arbore += cost_muchie;
 
-            for(auto vecin: lista_ad[nod]){
+            for(auto vecin: lista_ad[nod]){         // parcurgem muchiile nodului nou
                 int nod_vecin = vecin.first;
                 int cost_vecin = vecin.second;
 
-                if(viz[nod_vecin] == false && cost_min[nod_vecin] > cost_vecin){
-                    cost_min[nod_vecin] = cost_vecin;
+                if(!viz[nod_vecin] && cost_min[nod_vecin] > cost_vecin){       //daca nu am vizitat nodul si muchia gasita are un cost mai bun
+                    cost_min[nod_vecin] = cost_vecin;                          //updatam costul minim si introducem costul si nodul nou in coada cu prioritati
                     q.push({cost_vecin, nod_vecin});
                     tata[nod_vecin] = nod;
                 }
             }
         }
-
     }
+
     vector<pair<int,int>> sol;
     for(int i=1; i<=nrNoduri; i++){
         sol.push_back({tata[i],i});
@@ -483,7 +606,7 @@ void Graf::problema_APM()
     out.close();
 }
 
-vector<int> Graf::Dijkstra(const vector<vector<pair<int, int>>>& lista_ad, const int sursa)
+vector<int> Graf::Dijkstra(const vector<vector<pair<int, int>>>& lista_ad, const int sursa)         //O(m * log(n))
 {
     vector<int> dist(nrNoduri+1, NMAX);
     vector<bool> viz(nrNoduri+1, false);
@@ -497,10 +620,10 @@ vector<int> Graf::Dijkstra(const vector<vector<pair<int, int>>>& lista_ad, const
 
         if(!viz[nod]){
             viz[nod] = true;
-            for(auto vecin: lista_ad[nod]){
+            for(auto vecin: lista_ad[nod]){             //parcurgem toti vecinii nodului curent
                 int nod_vecin = vecin.first;
                 int cost_vecin = vecin.second;
-                if(dist[nod] + cost_vecin < dist[nod_vecin]){
+                if(dist[nod] + cost_vecin < dist[nod_vecin]){       //actualizam distantele
                     dist[nod_vecin] = dist[nod] + cost_vecin;
                     q.push({dist[nod_vecin], nod_vecin});
                 }
@@ -543,7 +666,7 @@ void Graf::problema_Dijkstra()
     out.close();
 }
 
-vector<int> Graf::Bellman_Ford(const vector<vector<pair<int, int>>> &lista_ad, const int sursa, bool& ciclu_negativ)
+vector<int> Graf::Bellman_Ford(const vector<vector<pair<int, int>>> &lista_ad, const int sursa, bool& ciclu_negativ)        //O(n*m)
 {
     vector<int> dist(nrNoduri+1, NMAX), viz(nrNoduri+1, 0);
     dist[sursa] = 0;
@@ -557,13 +680,13 @@ vector<int> Graf::Bellman_Ford(const vector<vector<pair<int, int>>> &lista_ad, c
         q.pop();
         viz[nod]++;
 
-        if (viz[nod] == nrNoduri){
+        if (viz[nod] == nrNoduri){                  // daca se mai fac actualizari la pasul n, inseamna ca exista un ciclu negativ in graf
             dist.resize(0);
             ciclu_negativ = true;
             break;
         }
 
-        for(auto vecin: lista_ad[nod]){
+        for(auto vecin: lista_ad[nod]){             //parcurgem toti vecinii nodului curent
             int nod_vecin = vecin.first;
             int cost = vecin.second;
 
@@ -693,13 +816,14 @@ int main()
     //G.problema_DFS();
     //G.problema_ctc();
     //G.problema_sortaret();
-    //G.Havel_Hakimi();
-    G.problema_APM();
+    //G.problema_Havel_Hakimi();
+    //G.problema_APM();
     //G.Paduri_de_multimi_disjuncte();
     //G.problema_Dijkstra();
     //G.problema_Bellman_Ford();
     //G.problema_Roy_Floyd();
     //G.problema_darb();
+    //G.problema_Flux_Maxim();
 
     return 0;
 }
