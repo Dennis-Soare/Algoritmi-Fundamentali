@@ -16,13 +16,10 @@ class Graf {
 
     bool construieste_lant_nesat_BF(const int sursa, const int dest, vector<int>& tata,const vector<vector<int>>& cap, vector<vector<int>>& flux);
     void parcurgere_dfs(const int nod_curent, vector<int>& sol, vector<bool>& viz);     //functie ajutatoare pentru dfs
-    vector<vector<int>> ctc();
-    void tarjan(int nod_curent, vector<bool>& viz, vector<bool>& pe_stiva, vector<int>& low, stack<int>& stiva, vector<vector<int>>& sol);
     void reuneste(int x, int y, vector<int>& tata, vector<int>& inaltime);  // pentru paduri_de_multimi_disjuncte
     int reprez(int x, vector<int>& tata);                                   // pentru paduri_de_multimi_disjuncte
 
 public:
-    Graf(){};
     Graf(int nr_noduri);
     void adauga_muchie(int, int, int);
     void afis_lista_ad();
@@ -496,10 +493,10 @@ void Graf::paduri_de_multimi_disjuncte()
     ifstream in("disjoint.in");
     ofstream out("disjoint.out");
 
-    int nrOperatii;
-    in>>nr_noduri>>nrOperatii;
+    int nrOperatii,n;
+    in>>n>>nrOperatii;
 
-    vector<int> tata(nr_noduri+1, 0), inaltime(nr_noduri+1, 0);
+    vector<int> tata(n+1, 0), inaltime(n+1, 0);
 
     // fiecare multime este memorata sub forma unui arbore, avand ca reprezentant radacina
 
@@ -802,16 +799,17 @@ void problema_ciclu_eulerian()
     ifstream in("ciclueuler.in");
     ofstream out("ciclueuler.out");
 
-    int nr_noduri, nr_muchii;
-    in>>nr_noduri>>nr_muchii;
-    Graf g(0);
-    vector<vector<pair<int,int>>> lista_ad(nr_noduri+1);
+    int N, M;
+    in>>N>>M;
+    vector<vector<pair<int,int>>> lista_ad(N+1);
+    Graf g(N);
 
-    for(int i=1; i<=nr_muchii; i++){
+    for(int i=1; i<=M; i++){
             int x,y;
             in>>x>>y;
             lista_ad[x].push_back({y, i});
             lista_ad[y].push_back({x, i});
+            g.adauga_muchie(x,y);
     }
 
     vector<int> sol = g.ciclu_eulerian(lista_ad);
@@ -823,6 +821,7 @@ void problema_ciclu_eulerian()
     out.close();
 }
 
+
 int main()
 {
     //problema_bfs();
@@ -833,12 +832,10 @@ int main()
     //problema_dijkstra();
     //problema_apm();
     //problema_bellman_ford();
-    //problema_flux_maxim();
     //problema_roy_floyd();
-    //problema_ctc();
+    //problema_flux_maxim();
     //problema_ciclu_eulerian();
     //problema_cuplaj();
-
 
     return 0;
 }
